@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>26B65528-63E4-41A2-AAAE-750C18680C30</string>
+	<key>IDESourceControlProjectName</key>
+	<string>embdx_VM</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>4C8DDB5D529F2877C957695AA3CF86AFDD829DEB</key>
+		<string>https://github.com/DCLouw/embdx_VM</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>embdx_VM.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>4C8DDB5D529F2877C957695AA3CF86AFDD829DEB</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/DCLouw/embdx_VM</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>4C8DDB5D529F2877C957695AA3CF86AFDD829DEB</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>4C8DDB5D529F2877C957695AA3CF86AFDD829DEB</string>
+			<key>IDESourceControlWCCName</key>
+			<string>embdx_VM</string>
+		</dict>
+	</array>
+</dict>
+</plist>
