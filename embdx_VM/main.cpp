@@ -1619,7 +1619,7 @@ int main(void)
 #endif                                                                          // end IDE
 
 // Sketch
-#include "embdx_VM.ino"
+#include "embdx_VM.cpp"
 
 
 #endif                                                                          // end embedXcode
