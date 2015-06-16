@@ -16,9 +16,9 @@
 # ----------------------------------
 # Automatic 0023 or 1.x.x selection based on version.txt
 #
-ifneq ($(shell grep 1. $(ARDUINO_PATH)/lib/version.txt),)
-    include $(MAKEFILE_PATH)/Arduino1.mk	
-else
-    include $(MAKEFILE_PATH)/Arduino23.mk	
-endif
+#ifneq ($(shell grep 1. $(ARDUINO_PATH)/lib/version.txt),)
+#    include $(MAKEFILE_PATH)/Arduino1.mk
+#else
+#    include $(MAKEFILE_PATH)/Arduino23.mk
+#endif
 

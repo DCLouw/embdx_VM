@@ -1,4 +1,8 @@
-Builds/main.cpp.o: main.cpp \
+Builds/Adafruit_BLE_UART/utility/aci_setup.cpp.o: \
+ Adafruit_BLE_UART/utility/aci_setup.cpp \
+ Adafruit_BLE_UART/utility/ble_system.h \
+ Adafruit_BLE_UART/utility/lib_aci.h \
+ Adafruit_BLE_UART/utility/hal_platform.h \
  /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/Arduino.h \
  /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/binary.h \
  /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/WCharacter.h \
@@ -10,7 +14,8 @@ Builds/main.cpp.o: main.cpp \
  /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/USBAPI.h \
  /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/cores/arduino/Arduino.h \
  /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/variants/standard/pins_arduino.h \
- embdx_VM.cpp \
- /Applications/Arduino.app/Contents/Java/hardware/arduino/avr/libraries/SPI/SPI.h \
- Adafruit_BLE_UART/Adafruit_BLE_UART.h \
- Adafruit_BLE_UART/utility/aci_evts.h Adafruit_BLE_UART/utility/aci.h
+ Adafruit_BLE_UART/utility/hal/hal_aci_tl.h \
+ Adafruit_BLE_UART/utility/hal_platform.h Adafruit_BLE_UART/utility/aci.h \
+ Adafruit_BLE_UART/utility/aci_cmds.h \
+ Adafruit_BLE_UART/utility/aci_evts.h \
+ Adafruit_BLE_UART/utility/aci_setup.h

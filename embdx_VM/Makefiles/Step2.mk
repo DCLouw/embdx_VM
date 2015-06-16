@@ -1,16 +1,3 @@
-#
-# embedXcode
-# ----------------------------------
-# Embedded Computing on Xcode
-#
-# Copyright © Rei VILO, 2010-2015
-# http://embedxcode.weebly.com
-# All rights reserved
-#
-#
-# Last update: May 14, 2015 release 289
-
-
 
 # Serial port check and selection
 # ----------------------------------
