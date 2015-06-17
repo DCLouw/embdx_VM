@@ -15,7 +15,7 @@
 APP_LIBS_LIST = SPI
 
 #User Libraries
-USER_LIBS_LIST = 0 #Adafruit_BLE_UART
+USER_LIBS_LIST =  #Adafruit_BLE_UART
 
 
 

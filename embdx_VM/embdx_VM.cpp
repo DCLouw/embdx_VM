@@ -39,16 +39,17 @@ void adcConfig();
 #define noBit(reg, target) (reg) &= ~(1<<(target))
 
 //AD7715 methods and variables
-//void adcConfig();
 uint16_t adcRead();
 
 uint8_t regCommand;
 volatile uint16_t regData;
 uint16_t adcval;
+uint8_t adctemp;
 volatile int c;
 
 //Test data
 char cool[] = "goof";
+//char twocool[] ;
 uint8_t lengthy =2;
 
 //Overheads
@@ -69,7 +70,6 @@ Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADA
 void aciCallback(aci_evt_opcode_t event)
 {
     
-    Serial.println("entered aci callback loop");
     
     switch(event)
     {
@@ -117,11 +117,6 @@ void setup(void)
     while(!Serial);
     Serial.println(F("Adafruit Bluefruit Low Energy nRF8001 Callback Echo demo"));
     
-   
-    
-    //cool[0] = 6;
-    //cool[1] = 5;
-    //cool[2] = 2;
     
     tmrOverflowsNow =0;
     tmrOverflowsThen1=0;
@@ -132,9 +127,8 @@ void setup(void)
     intConfig();
     timerConfig();
     tmr1Config();
-    //adcConfig();
+    adcConfig();
     
-    spiConfig(NRF8001);
     
     uart.setRXcallback(rxCallback);
     uart.setACIcallback(aciCallback);
@@ -149,7 +143,7 @@ void loop()
 
 void timerConfig()
 {
-    spiConfig(NRF8001);
+    //spiConfig(NRF8001);
     
     Serial.println("timer config started");
     
@@ -245,7 +239,7 @@ void adcConfig()
     
     //Communications register write
     regCommand = 0b00001000; //just reading from the comms register for the second operation
-    adcval = SPI.transfer(regCommand);
+    adctemp = SPI.transfer(regCommand);
     Serial.println(regCommand);
     Serial.println ("was sent to ad7715");
     
@@ -315,6 +309,10 @@ ISR(INT1_vect) // ISR for cadence sensing reed switch
         //Serial.println(PowNow);
         
         uart.write((uint8_t *)cool,5);
+        _delay_ms(1000);
+        uart.write((uint8_t *)adcval,5);
+        _delay_ms(1000);
+        uart.write((uint8_t *)cool,5);
         
         tmrOverflowsThen1 = tmrOverflowsNow; // set new overflows count to compare next time
         
@@ -361,7 +359,7 @@ ISR(TIMER2_OVF_vect) // ISR for timer 2 overflow
 
 
 
-//Timer 1 setup as 1Mhz clock to drive the AD7715
+//Timer 1 setup as 1Mhz clock on pin 15 to drive the AD7715
 void tmr1Config()
 {
     
