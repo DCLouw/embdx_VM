@@ -309,10 +309,10 @@ ISR(INT1_vect) // ISR for cadence sensing reed switch
         //Serial.println(PowNow);
         
         uart.write((uint8_t *)cool,5);
-        _delay_ms(1000);
-        uart.write((uint8_t *)adcval,5);
-        _delay_ms(1000);
-        uart.write((uint8_t *)cool,5);
+        
+        uart.write((uint8_t *)adctemp,5);
+        
+        uart.write((uint8_t *)(0b00001000),5);
         
         tmrOverflowsThen1 = tmrOverflowsNow; // set new overflows count to compare next time
         
