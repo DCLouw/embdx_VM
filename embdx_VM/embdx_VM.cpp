@@ -11,7 +11,7 @@
 
 
 //SPI driver methods and variables
-//void spiConfig(int);
+void spiConfig(int);
 
 #define NRF8001 1
 #define AD7715 2
@@ -68,6 +68,9 @@ Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADA
 
 void aciCallback(aci_evt_opcode_t event)
 {
+    
+    Serial.println("entered aci callback loop");
+    
     switch(event)
     {
         case ACI_EVT_DEVICE_STARTED:
@@ -114,8 +117,7 @@ void setup(void)
     while(!Serial);
     Serial.println(F("Adafruit Bluefruit Low Energy nRF8001 Callback Echo demo"));
     
-    uart.setRXcallback(rxCallback);
-    uart.setACIcallback(aciCallback);
+   
     
     //cool[0] = 6;
     //cool[1] = 5;
@@ -130,7 +132,12 @@ void setup(void)
     intConfig();
     timerConfig();
     tmr1Config();
-    adcConfig();
+    //adcConfig();
+    
+    spiConfig(NRF8001);
+    
+    uart.setRXcallback(rxCallback);
+    uart.setACIcallback(aciCallback);
 }
 
 
@@ -142,7 +149,7 @@ void loop()
 
 void timerConfig()
 {
-    
+    spiConfig(NRF8001);
     
     Serial.println("timer config started");
     
@@ -201,6 +208,7 @@ void spiConfig(int dev)
             SPI.setDataMode(SPI_MODE0);
             SPI.setClockDivider(SPI_CLOCK_DIV8);
             Serial.println("spi has been setup for nrf8001");
+            break;
         }
             
         case AD7715: //AD7715 SPI settings
@@ -214,6 +222,7 @@ void spiConfig(int dev)
             SPI.setDataMode(SPI_MODE0);
             SPI.setClockDivider(SPI_CLOCK_DIV8);
             Serial.println("spi has been setup for ad7715");
+            break;
         }
             
     }
