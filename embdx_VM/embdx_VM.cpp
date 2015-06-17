@@ -49,7 +49,11 @@ volatile int c;
 
 //Test data
 char cool[] = "goof";
-//char twocool[] ;
+char twocool[5] ;
+char threecool[5] ;
+char fourcool[5] ;
+char fivecool[5] ;
+char sixcool[10] ;
 uint8_t lengthy =2;
 
 //Overheads
@@ -129,6 +133,11 @@ void setup(void)
     tmr1Config();
     adcConfig();
     
+    itoa (2,twocool,10);
+    itoa (adctemp, threecool,10);
+    //sprintf(fourcool,"%d",4);
+    sprintf(fivecool,"%d",0b00000101);
+    //sprintf(sixcool,"%d",adctemp);
     
     uart.setRXcallback(rxCallback);
     uart.setACIcallback(aciCallback);
@@ -310,9 +319,15 @@ ISR(INT1_vect) // ISR for cadence sensing reed switch
         
         uart.write((uint8_t *)cool,5);
         
-        uart.write((uint8_t *)adctemp,5);
+        uart.write((uint8_t *)twocool,5);
         
-        uart.write((uint8_t *)(0b00001000),5);
+        uart.write((uint8_t *)threecool,5);
+        
+       // uart.write((uint8_t *)fourcool,5);
+        
+        uart.write((uint8_t *)fivecool,5);
+        
+       // uart.write((uint8_t *)sixcool,10);
         
         tmrOverflowsThen1 = tmrOverflowsNow; // set new overflows count to compare next time
         
