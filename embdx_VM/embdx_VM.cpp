@@ -129,6 +129,24 @@ void setup(void)
     uart.begin();
     
     
+    //Set CS pins for both chips as outputs
+    goBit(DDRD,DDD5);
+    goBit(DDRB,DDB2);
+    goBit(PORTD, PORTD5); //Making sure chip is unselected right from the start
+    goBit(DDRD, DDD6); // Control for adc RESET pin
+    
+    //little init verificatioln sequency
+    goBit(PORTD, PORTD6); // Reset pulled high by default
+    _delay_ms(500);
+    noBit(PORTD, PORTD6);
+    _delay_ms(500);
+    goBit(PORTD, PORTD6);
+    _delay_ms(500);
+    noBit(PORTD, PORTD6);
+    _delay_ms(500);
+    goBit(PORTD, PORTD6);
+    _delay_ms(500);
+    
     adcConfig();
     timerConfig();
     tmr1Config();
@@ -136,7 +154,7 @@ void setup(void)
     intConfig();
     
     itoa (2,twocool,10);
-    itoa (adctemp, threecool,10);
+    
     //sprintf(fourcool,"%d",4);
     sprintf(fivecool,"%d",0b00000101);
     //sprintf(sixcool,"%d",adctemp);
@@ -151,6 +169,45 @@ void loop()
     uart.pollACI();
 }
 
+
+void adcConfig()
+{
+    Serial.println("adc config started");
+    
+    
+    //Configure custom SPI settings
+    spiConfig(AD7715);
+    
+    noBit(PORTD, PORTD6); // ADC is reset
+    _delay_ms(500);
+    goBit(PORTD, PORTD6); // Reset pulled high
+    
+    //Communications register write
+    regCommand = 0b00001000; //just reading from the comms register for the second operation
+    adctemp = SPI.transfer(regCommand);
+    spiConfig(NRF8001);
+    itoa (adctemp, threecool,10);
+    Serial.println(regCommand);
+    Serial.println ("was sent to ad7715");
+    
+    ///////The actual metod to be inserted now to replace the dummy read of the comms register above
+    //regCommand = 0b00010000; // Prepare for a write to the setup register next. set gain as 1 initially
+    //Setup register write
+    //regCommand = 0b01001111; //Self calibration mode. Master clock frequency @1MHz.6.55Hz -3dB cutoff frequency for LP filter. //Unipolar operation. Buffer on?.fsncoff.
+    //SPI.transfer(regCommand);
+    
+    ///////
+    
+    //adcval = SPI.transfer(6);
+    Serial.println(adcval);
+    Serial.println ("was read from ad7715");
+    
+    
+    //As you were...
+    
+    Serial.println("adc config completed");
+    
+}
 
 void timerConfig()
 {
@@ -202,31 +259,37 @@ void spiConfig(int dev)
     switch(dev)
     {
             
-        case NRF8001: //nrf8001 SPI settings
+        case 1: //nrf8001 SPI settings
         {
-            //select the nrf8001
+            //Deselect both slaves
             goBit(PORTD, PORTD5);
-            noBit(PORTB, PORTB2);
+            goBit(PORTB, PORTB2);
             
-            //Setup nrf8001 spi settings
+            //Setup SPI
             SPI.setBitOrder(LSBFIRST);
             SPI.setDataMode(SPI_MODE0);
             SPI.setClockDivider(SPI_CLOCK_DIV8);
             Serial.println("spi has been setup for nrf8001");
+            
+            //Select NRF8001
+            //noBit(PORTB, PORTB2);
             break;
         }
             
-        case AD7715: //AD7715 SPI settings
+        case 2: //AD7715 SPI settings
         {
-            //select the AD7715
-            noBit(PORTD, PORTD5);
+            //Deselect both slaves
+            goBit(PORTD, PORTD5);
             goBit(PORTB, PORTB2);
             
-            //Setup AD7715 spi settings
+            //Setup SPI
             SPI.setBitOrder(MSBFIRST);
             SPI.setDataMode(SPI_MODE0);
-            SPI.setClockDivider(SPI_CLOCK_DIV8);
+            SPI.setClockDivider(SPI_CLOCK_DIV16);
             Serial.println("spi has been setup for ad7715");
+            
+            //Select the AD7715
+            noBit(PORTD, PORTD5);
             break;
         }
             
@@ -236,66 +299,31 @@ void spiConfig(int dev)
 }
 
 
-void adcConfig()
-{
-    Serial.println("adc config started");
-    
-    
-    //Set CS pins for both chips as outputs
-    goBit(DDRD,DDD5);
-    goBit(DDRB,DDB2);
-    
-    //Configure custom SPI settings
-    spiConfig(AD7715);
-    
-    //Communications register write
-    regCommand = 0b00001000; //just reading from the comms register for the second operation
-    adctemp = SPI.transfer(regCommand);
-    Serial.println(regCommand);
-    Serial.println ("was sent to ad7715");
-    
-///////The actual metod to be inserted now to replace the dummy read of the comms register above
-    //regCommand = 0b00010000; // Prepare for a write to the setup register next. set gain as 1 initially
-    //Setup register write
-    //regCommand = 0b01001111; //Self calibration mode. Master clock frequency @1MHz.6.55Hz -3dB cutoff frequency for LP filter. //Unipolar operation. Buffer on?.fsncoff.
-    //SPI.transfer(regCommand);
-    
-///////
-    
-    //adcval = SPI.transfer(6);
-    Serial.println(adcval);
-    Serial.println ("was read from ad7715");
-    
-    
-    //As you were...
-    spiConfig(NRF8001);
-    Serial.println("adc config completed");
-    
-}
 
 
-uint16_t adcread()
-{
-    
-    Serial.println("adc read started");
-    
-    uint8_t tempbyte;
-    uint16_t tempword;
-    
-    spiConfig(AD7715);
-    
-    //prepare for read operation
-    regCommand = 0b00111000; // prepare for a read of the data register. gain setting of 1.
-    tempbyte = SPI.transfer(regCommand); //Transfers the command and reads the first byte.
-    tempword = tempbyte<<8;
-    tempbyte = SPI.transfer(0); //read the second byte from data register
-    tempword |= tempbyte; // Should now contain full 16 bit data register
-    
-    spiConfig(NRF8001);
-    
-    return tempword;
-    
-}
+
+//uint16_t adcread()
+//{
+//    
+//    Serial.println("adc read started");
+//    
+//    uint8_t tempbyte;
+//    uint16_t tempword;
+//    
+//    spiConfig(AD7715);
+//    
+//    //prepare for read operation
+//    regCommand = 0b00111000; // prepare for a read of the data register. gain setting of 1.
+//    tempbyte = SPI.transfer(regCommand); //Transfers the command and reads the first byte.
+//    tempword = tempbyte<<8;
+//    tempbyte = SPI.transfer(0); //read the second byte from data register
+//    tempword |= tempbyte; // Should now contain full 16 bit data register
+//    
+//    spiConfig(NRF8001);
+//    
+//    return tempword;
+//    
+//}
 
 
 
@@ -409,9 +437,3 @@ void tmr1Config()
     
 };
 
-// AT last test:
-
-//So succesfull reads were done from the comms register as proof of concept
-//metohds have now been added to actual setup and read from data register.
-//BY uncommneting necessary lines: DRDY will be monitored and new bytes read each time available
-// Once the button is pressed, the current value (stored in volatile pownow) will be displayed
