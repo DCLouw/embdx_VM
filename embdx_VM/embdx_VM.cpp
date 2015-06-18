@@ -44,7 +44,7 @@ uint16_t adcRead();
 uint8_t regCommand;
 volatile uint16_t regData;
 uint16_t adcval;
-uint8_t adctemp;
+volatile uint8_t adctemp;
 volatile int c;
 
 //Test data
@@ -62,6 +62,7 @@ void aciCallback(aci_evt_opcode_t event);
 void rxCallback(uint8_t *buffer, uint8_t len);
 void setup(void);
 void loop();
+void gogowrite();
 
 #define ADAFRUITBLE_REQ 10
 #define ADAFRUITBLE_RDY 2
@@ -128,10 +129,11 @@ void setup(void)
     uart.begin();
     
     
-    intConfig();
+    adcConfig();
     timerConfig();
     tmr1Config();
-    adcConfig();
+    
+    intConfig();
     
     itoa (2,twocool,10);
     itoa (adctemp, threecool,10);
@@ -309,6 +311,7 @@ ISR(INT1_vect) // ISR for cadence sensing reed switch
         
         Serial.println("interrupt passed");
         
+        
         //cadTime = ((tmrOverflowsNow-tmrOverflowsThen1)*1024)+(TCNT1*4); //time in uS
         //cadRPM = round((60000000)/cadTime);
         
@@ -317,21 +320,15 @@ ISR(INT1_vect) // ISR for cadence sensing reed switch
         //Serial.println("Current power figure is: ");
         //Serial.println(PowNow);
         
-        uart.write((uint8_t *)cool,5);
-        
-        uart.write((uint8_t *)twocool,5);
-        
-        uart.write((uint8_t *)threecool,5);
-        
-       // uart.write((uint8_t *)fourcool,5);
-        
-        uart.write((uint8_t *)fivecool,5);
+        gogowrite();
         
        // uart.write((uint8_t *)sixcool,10);
         
         tmrOverflowsThen1 = tmrOverflowsNow; // set new overflows count to compare next time
         
         Serial.println("interrupt completed");
+        
+    
     }
     
     else {
@@ -340,6 +337,23 @@ ISR(INT1_vect) // ISR for cadence sensing reed switch
     }
     
     
+}
+
+void gogowrite()
+{
+    cli();
+    
+    uart.write((uint8_t *)cool,5);
+    //uart.pollACI();
+    uart.write((uint8_t *)twocool,5);
+    uart.pollACI();
+    uart.write((uint8_t *)threecool,5);
+    //uart.pollACI();
+    // uart.write((uint8_t *)fourcool,5);
+    
+    uart.write((uint8_t *)fivecool,5);
+    
+    sei();
 }
 
 
