@@ -64,9 +64,13 @@ void setup(void);
 void loop();
 void gogowrite();
 
-#define ADAFRUITBLE_REQ 10
+#define ADAFRUITBLE_REQ 6 //PD4
 #define ADAFRUITBLE_RDY 2
 #define ADAFRUITBLE_RST 7
+
+//other important pins
+//ADC CS on PD5
+//ADC RESET on PD6
 
 
 //#line 25
@@ -116,6 +120,7 @@ void rxCallback(uint8_t *buffer, uint8_t len)
     
 }
 
+
 void setup(void)
 {
     Serial.begin(9600);
@@ -126,26 +131,25 @@ void setup(void)
     tmrOverflowsNow =0;
     tmrOverflowsThen1=0;
     
-    uart.begin();
     
     
     //Set CS pins for both chips as outputs
-    goBit(DDRD,DDD5);
-    goBit(DDRB,DDB2);
-    goBit(PORTD, PORTD5); //Making sure chip is unselected right from the start
+    goBit(DDRD,DDD5); //CS for ADC
+    //goBit(DDRB,DDB2);
+    goBit(PORTD, PORTD5); //Making sure ADC chip is unselected right from the start
     goBit(DDRD, DDD6); // Control for adc RESET pin
     
     //little init verificatioln sequency
-    goBit(PORTD, PORTD6); // Reset pulled high by default
-    _delay_ms(500);
-    noBit(PORTD, PORTD6);
-    _delay_ms(500);
-    goBit(PORTD, PORTD6);
-    _delay_ms(500);
-    noBit(PORTD, PORTD6);
-    _delay_ms(500);
-    goBit(PORTD, PORTD6);
-    _delay_ms(500);
+   goBit(PORTD, PORTD6); // Reset pulled high by default
+//    _delay_ms(500);
+//    noBit(PORTD, PORTD6);
+//    _delay_ms(500);
+//    goBit(PORTD, PORTD6);
+//    _delay_ms(500);
+//    noBit(PORTD, PORTD6);
+//    _delay_ms(500);
+//    goBit(PORTD, PORTD6);
+//    _delay_ms(500);
     
     adcConfig();
     timerConfig();
@@ -153,11 +157,13 @@ void setup(void)
     
     intConfig();
     
-    itoa (2,twocool,10);
+    //itoa (2,twocool,10);
     
     //sprintf(fourcool,"%d",4);
-    sprintf(fivecool,"%d",0b00000101);
+    //sprintf(fivecool,"%d",0b00000101);
     //sprintf(sixcool,"%d",adctemp);
+    
+    uart.begin();
     
     uart.setRXcallback(rxCallback);
     uart.setACIcallback(aciCallback);
@@ -172,21 +178,26 @@ void loop()
 
 void adcConfig()
 {
+    cli();
+    
     Serial.println("adc config started");
     
-    
     //Configure custom SPI settings
-    spiConfig(AD7715);
+    //spiConfig(AD7715);
+    
+    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
+    noBit(PORTD, PORTD5); //Select the ADC
     
     noBit(PORTD, PORTD6); // ADC is reset
-    _delay_ms(500);
+    _delay_ms(1000);
     goBit(PORTD, PORTD6); // Reset pulled high
     
     //Communications register write
     regCommand = 0b00001000; //just reading from the comms register for the second operation
     adctemp = SPI.transfer(regCommand);
-    spiConfig(NRF8001);
+    //spiConfig(NRF8001);
     itoa (adctemp, threecool,10);
+    itoa (4, fourcool,10);
     Serial.println(regCommand);
     Serial.println ("was sent to ad7715");
     
@@ -202,11 +213,14 @@ void adcConfig()
     Serial.println(adcval);
     Serial.println ("was read from ad7715");
     
+    goBit(PORTD, PORTD5);
+    SPI.endTransaction();
     
     //As you were...
     
     Serial.println("adc config completed");
     
+    sei();
 }
 
 void timerConfig()
@@ -253,50 +267,54 @@ void intConfig(void)
 
 
 
-void spiConfig(int dev)
-{
-    
-    switch(dev)
-    {
-            
-        case 1: //nrf8001 SPI settings
-        {
-            //Deselect both slaves
-            goBit(PORTD, PORTD5);
-            goBit(PORTB, PORTB2);
-            
-            //Setup SPI
-            SPI.setBitOrder(LSBFIRST);
-            SPI.setDataMode(SPI_MODE0);
-            SPI.setClockDivider(SPI_CLOCK_DIV8);
-            Serial.println("spi has been setup for nrf8001");
-            
-            //Select NRF8001
-            //noBit(PORTB, PORTB2);
-            break;
-        }
-            
-        case 2: //AD7715 SPI settings
-        {
-            //Deselect both slaves
-            goBit(PORTD, PORTD5);
-            goBit(PORTB, PORTB2);
-            
-            //Setup SPI
-            SPI.setBitOrder(MSBFIRST);
-            SPI.setDataMode(SPI_MODE0);
-            SPI.setClockDivider(SPI_CLOCK_DIV16);
-            Serial.println("spi has been setup for ad7715");
-            
-            //Select the AD7715
-            noBit(PORTD, PORTD5);
-            break;
-        }
-            
-    }
-    
-    
-}
+//void spiConfig(int dev)
+//{
+//    
+//    switch(dev)
+//    {
+//            
+//        case 1: //nrf8001 SPI settings
+//        {
+//            //Deselect both slaves
+//            goBit(PORTD, PORTD5);
+//            //goBit(PORTB, PORTB2);
+//            
+//            //Setup SPI
+//            //SPI.setBitOrder(LSBFIRST);
+//            //SPI.setDataMode(SPI_MODE0);
+//            //SPI.setClockDivider(SPI_CLOCK_DIV8);
+//            Serial.println("spi has been setup for nrf8001");
+//            
+//            SPI.beginTransaction(SPISettings(1000000, LSBFIRST, SPI_MODE0));
+//            
+//            //Select NRF8001
+//            //noBit(PORTB, PORTB2);
+//            break;
+//        }
+//            
+//        case 2: //AD7715 SPI settings
+//        {
+//            //Deselect both slaves
+//            goBit(PORTD, PORTD5);
+//            goBit(PORTB, PORTB2);
+//            
+//            //Setup SPI
+//            //SPI.setBitOrder(MSBFIRST);
+//            //SPI.setDataMode(SPI_MODE0);
+//            //SPI.setClockDivider(SPI_CLOCK_DIV16);
+//            Serial.println("spi has been setup for ad7715");
+//            
+//            SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
+//            
+//            //Select the AD7715
+//            noBit(PORTD, PORTD5);
+//            break;
+//        }
+//            
+//    }
+//    
+//    
+//}
 
 
 
@@ -373,13 +391,12 @@ void gogowrite()
     
     uart.write((uint8_t *)cool,5);
     //uart.pollACI();
-    uart.write((uint8_t *)twocool,5);
-    uart.pollACI();
+    //uart.write((uint8_t *)twocool,5);
     uart.write((uint8_t *)threecool,5);
     //uart.pollACI();
-    // uart.write((uint8_t *)fourcool,5);
+     uart.write((uint8_t *)fourcool,5);
     
-    uart.write((uint8_t *)fivecool,5);
+    //uart.write((uint8_t *)fivecool,5);
     
     sei();
 }
