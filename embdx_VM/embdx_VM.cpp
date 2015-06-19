@@ -74,7 +74,7 @@ void gogowrite();
 
 
 //#line 25
-Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
+//Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
 
 void aciCallback(aci_evt_opcode_t event)
 {
@@ -116,7 +116,7 @@ void rxCallback(uint8_t *buffer, uint8_t len)
     Serial.println(F(" ]"));
     
     
-    uart.write(buffer, len);
+    //uart.write(buffer, len);
     
 }
 
@@ -132,15 +132,17 @@ void setup()
     tmrOverflowsThen1=0;
     
     
-    
     //Set CS pins for both chips as outputs
-    goBit(DDRD,DDD5); //CS for ADC
-    goBit(PORTD, PORTD5); //Making sure ADC chip is unselected right from the start
+    //goBit(DDRD,DDD5); //CS for ADC
+    //goBit(PORTD, PORTD5); //Making sure ADC chip is unselected right from the start
     
-    goBit(DDRD, DDD6); // Control for adc RESET pin
-    goBit(PORTD, PORTD6); // Reset pulled high by default
+    //goBit(DDRD, DDD6); // Control for adc RESET pin
+    //goBit(PORTD, PORTD6); // Reset pulled high by default
     //little init verificatioln sequency
    
+    pinMode(SS, OUTPUT);
+    
+    SPI.begin();
 //    _delay_ms(500);
 //    noBit(PORTD, PORTD6);
 //    _delay_ms(500);
@@ -154,11 +156,11 @@ void setup()
     
     //timerConfig();
     //_delay_ms(35);
-    //tmr1Config();
+    tmr1Config();
     
-    //intConfig();
+    intConfig();
     
-    adcConfig();
+    //adcConfig();
     
     //itoa (2,twocool,10);
     
@@ -167,16 +169,75 @@ void setup()
     //sprintf(sixcool,"%d",adctemp);
     
     
-    uart.setRXcallback(rxCallback);
-    uart.setACIcallback(aciCallback);
+    //uart.setRXcallback(rxCallback);
+    //uart.setACIcallback(aciCallback);
     
-    uart.begin();
+    //uart.begin();
 }
 
 
 void loop()
 {
-    uart.pollACI();
+    //uart.pollACI();
+    
+    
+    
+    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
+    
+    adctemp = SPI.transfer(0b00001000);
+    _delay_ms(100);
+
+    
+    Serial.println(adctemp);
+    Serial.println ("--");
+    
+    SPI.endTransaction();
+    
+    _delay_ms(100);
+    
+////
+    
+//    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
+//    
+//    adctemp = SPI.transfer(0b00000100);
+//    
+//    Serial.println(adctemp);
+//    Serial.println ("second read result");
+//    
+//    SPI.endTransaction();
+//    
+//    _delay_ms(2000);
+    
+    ////
+//    
+//    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE2));
+//    
+//    adctemp = SPI.transfer(0b00001100);
+//    
+//    Serial.println(adctemp);
+//    Serial.println ("third read result");
+//    
+//    SPI.endTransaction();
+//    
+//    _delay_ms(2000);
+    
+    ////
+    
+//    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE2));
+//    
+//    adctemp = SPI.transfer(0b00001000);
+//    
+//    Serial.println(adctemp);
+//    Serial.println ("Fourth read result");
+//    
+//    SPI.endTransaction();
+//    
+//    _delay_ms(700);
+    
+    ////
+    
+    
+    
 }
 
 
@@ -196,8 +257,10 @@ void adcConfig()
     
 //    SPI.beginTransaction(SPISettings(62500, MSBFIRST, SPI_MODE2));
 //    _delay_ms(1000);
-//    noBit(PORTD, PORTD5); //Select the ADC
-//    
+    //noBit(PORTD, PORTD5); //Select the ADC
+//
+    SPI.begin();
+    
 //    noBit(PORTD, PORTD6); // ADC is reset
 //    _delay_ms(500);
 //    goBit(PORTD, PORTD6); // Reset pulled high
@@ -239,10 +302,11 @@ void adcConfig()
 
     /////////////////////////////
     
-    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
-    _delay_ms(200);
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     noBit(PORTD, PORTD5); //Select the ADC
-
+    //_delay_ms(200);
+    adctemp = SPI.transfer(233);
+//_delay_ms(500);
     //_delay_ms(200);
     
     //Communications register write
@@ -253,6 +317,8 @@ void adcConfig()
     goBit(PORTD, PORTD5);
     SPI.endTransaction();
     _delay_ms(200);
+    
+    //spi.end();
     
     
     /////////////////////////////
@@ -285,9 +351,9 @@ void adcConfig()
     
     ///////
     
-    adctemp = SPI.transfer(8);
+    
     Serial.println(adctemp);
-    Serial.println ("was reed from ad7715");
+    Serial.println ("was read from ad7715");
     
     //As you were...
     
@@ -467,7 +533,7 @@ void gogowrite()
     //uart.write((uint8_t *)threecool,5);
    // uart.write((uint8_t *)twocool,5);
     //uart.pollACI();
-     uart.write((uint8_t *)fourcool,5);
+     //uart.write((uint8_t *)fourcool,5);
     
     //uart.write((uint8_t *)fivecool,5);
     
