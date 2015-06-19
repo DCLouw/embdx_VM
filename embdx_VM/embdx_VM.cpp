@@ -39,12 +39,12 @@ void adcConfig();
 #define noBit(reg, target) (reg) &= ~(1<<(target))
 
 //AD7715 methods and variables
-uint16_t adcRead();
+//uint16_t adcRead();
 
 uint8_t regCommand;
 volatile uint16_t regData;
 uint16_t adcval;
-volatile uint8_t adctemp;
+uint8_t adctemp;
 volatile int c;
 
 //Test data
@@ -60,11 +60,11 @@ uint8_t lengthy =2;
 #include "Arduino.h"
 void aciCallback(aci_evt_opcode_t event);
 void rxCallback(uint8_t *buffer, uint8_t len);
-void setup(void);
+void setup();
 void loop();
 void gogowrite();
 
-#define ADAFRUITBLE_REQ 6 //PD4
+#define ADAFRUITBLE_REQ 4 //PD4
 #define ADAFRUITBLE_RDY 2
 #define ADAFRUITBLE_RST 7
 
@@ -121,7 +121,7 @@ void rxCallback(uint8_t *buffer, uint8_t len)
 }
 
 
-void setup(void)
+void setup()
 {
     Serial.begin(9600);
     while(!Serial);
@@ -135,12 +135,12 @@ void setup(void)
     
     //Set CS pins for both chips as outputs
     goBit(DDRD,DDD5); //CS for ADC
-    //goBit(DDRB,DDB2);
     goBit(PORTD, PORTD5); //Making sure ADC chip is unselected right from the start
-    goBit(DDRD, DDD6); // Control for adc RESET pin
     
+    goBit(DDRD, DDD6); // Control for adc RESET pin
+    goBit(PORTD, PORTD6); // Reset pulled high by default
     //little init verificatioln sequency
-   goBit(PORTD, PORTD6); // Reset pulled high by default
+   
 //    _delay_ms(500);
 //    noBit(PORTD, PORTD6);
 //    _delay_ms(500);
@@ -150,12 +150,15 @@ void setup(void)
 //    _delay_ms(500);
 //    goBit(PORTD, PORTD6);
 //    _delay_ms(500);
+    
+    
+    //timerConfig();
+    //_delay_ms(35);
+    //tmr1Config();
+    
+    //intConfig();
     
     adcConfig();
-    timerConfig();
-    tmr1Config();
-    
-    intConfig();
     
     //itoa (2,twocool,10);
     
@@ -163,10 +166,11 @@ void setup(void)
     //sprintf(fivecool,"%d",0b00000101);
     //sprintf(sixcool,"%d",adctemp);
     
-    uart.begin();
     
     uart.setRXcallback(rxCallback);
     uart.setACIcallback(aciCallback);
+    
+    uart.begin();
 }
 
 
@@ -178,29 +182,101 @@ void loop()
 
 void adcConfig()
 {
-    cli();
+    //cli();
     
     Serial.println("adc config started");
     
     //Configure custom SPI settings
     //spiConfig(AD7715);
     
-    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
-    noBit(PORTD, PORTD5); //Select the ADC
+    //goBit(DDRD, DDD4);
+    //goBit(PORTD, PORTD4); //unselecting the nrf8001
     
-    noBit(PORTD, PORTD6); // ADC is reset
-    _delay_ms(1000);
-    goBit(PORTD, PORTD6); // Reset pulled high
+////////////////////// FIRST ATTEMPT
+    
+//    SPI.beginTransaction(SPISettings(62500, MSBFIRST, SPI_MODE2));
+//    _delay_ms(1000);
+//    noBit(PORTD, PORTD5); //Select the ADC
+//    
+//    noBit(PORTD, PORTD6); // ADC is reset
+//    _delay_ms(500);
+//    goBit(PORTD, PORTD6); // Reset pulled high
+//    _delay_ms(1000);
+//    
+//    //Communications register write
+    regCommand = 0b00001000; //just reading from the comms register for the second operation
+//    adctemp = SPI.transfer(regCommand);
+//   //adctemp = SPI.transfer(0);
+//    _delay_ms(1000);
+//    itoa (adctemp, twocool,10);
+//    Serial.println(regCommand);
+//    Serial.println ("was sent to ad7715");
+//    goBit(PORTD, PORTD5);
+//    SPI.endTransaction();
+//    _delay_ms(500);
+    
+/////////////////////////////
+    
+//    goBit(PORTD, PORTD4); //unselecting the nrf8001
+//    noBit(PORTD, PORTD5); //Select the ADC
+//    
+//    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE2));
+//    _delay_ms(1000);
+//    noBit(PORTD, PORTD5); //Select the ADC
+//    
+//    //Communications register write
+//    _delay_ms(1000);
+//    adctemp = SPI.transfer(8);
+//    _delay_ms(500);
+//    itoa (adctemp, threecool,10);
+//
+//    goBit(PORTD, PORTD5);
+//    SPI.endTransaction();
+//    _delay_ms(500);
+    
+/////////////////////////////
+    
+
+    /////////////////////////////
+    
+    SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE0));
+    _delay_ms(200);
+    noBit(PORTD, PORTD5); //Select the ADC
+
+    //_delay_ms(200);
     
     //Communications register write
-    regCommand = 0b00001000; //just reading from the comms register for the second operation
-    adctemp = SPI.transfer(regCommand);
-    //spiConfig(NRF8001);
-    itoa (adctemp, threecool,10);
-    itoa (4, fourcool,10);
-    Serial.println(regCommand);
-    Serial.println ("was sent to ad7715");
+    //_delay_ms(1000);
+    //adctemp = SPI.transfer(regCommand);
+    //_delay_ms(200);
+    //itoa (adctemp, fourcool,10);
+    goBit(PORTD, PORTD5);
+    SPI.endTransaction();
+    _delay_ms(200);
     
+    
+    /////////////////////////////
+
+    
+    /////////////////////////////
+    
+//    SPI.beginTransaction(SPISettings(62500, MSBFIRST, SPI_MODE2));
+//    _delay_ms(1000);
+//    noBit(PORTD, PORTD5); //Select the ADC
+//    
+//    //Communications register write
+//    _delay_ms(1000);
+//    adctemp = SPI.transfer(8);
+//    _delay_ms(500);
+//
+//    itoa (adctemp, fivecool,10);
+//
+//    goBit(PORTD, PORTD5);
+//    SPI.endTransaction();
+//    _delay_ms(500);
+    
+    /////////////////////////////
+
     ///////The actual metod to be inserted now to replace the dummy read of the comms register above
     //regCommand = 0b00010000; // Prepare for a write to the setup register next. set gain as 1 initially
     //Setup register write
@@ -209,18 +285,15 @@ void adcConfig()
     
     ///////
     
-    //adcval = SPI.transfer(6);
-    Serial.println(adcval);
-    Serial.println ("was read from ad7715");
-    
-    goBit(PORTD, PORTD5);
-    SPI.endTransaction();
+    adctemp = SPI.transfer(8);
+    Serial.println(adctemp);
+    Serial.println ("was reed from ad7715");
     
     //As you were...
     
     Serial.println("adc config completed");
     
-    sei();
+    //sei();
 }
 
 void timerConfig()
@@ -236,7 +309,7 @@ void timerConfig()
     goBit(TCCR2B, CS22); // running @ /64 pre-scaled clock
     
     
-    Serial.println("timer config completed");
+    Serial.println("timer configg completed");
     
 }
 
@@ -389,10 +462,10 @@ void gogowrite()
 {
     cli();
     
-    uart.write((uint8_t *)cool,5);
+    //uart.write((uint8_t *)cool,5);
     //uart.pollACI();
-    //uart.write((uint8_t *)twocool,5);
-    uart.write((uint8_t *)threecool,5);
+    //uart.write((uint8_t *)threecool,5);
+   // uart.write((uint8_t *)twocool,5);
     //uart.pollACI();
      uart.write((uint8_t *)fourcool,5);
     
@@ -452,5 +525,5 @@ void tmr1Config()
     goBit(DDRB, DDB1); //Set port B1 as output. This pin will generate the clock
     
     
-};
+}
 
