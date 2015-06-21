@@ -6,9 +6,9 @@
 #include <SPI.h>
 #include <avr/io.h>
 #include "Adafruit_BLE_UART.h"
+#include "Arduino.h"
 #include <util/delay.h>
 #include <avr/interrupt.h>
-#include "Arduino.h"
 #include <Math.h>
 
 //Global methods
@@ -16,8 +16,8 @@
     //System configuration
 void configAdc();
 void configPins();
-void configClkMega();
-void configInt;
+void configMegaClk();
+void configInts();
 void configTimer();
 
     //Callbacks
@@ -29,8 +29,7 @@ void setup();
 void loop();
 
     //I/O
-void sendBLE(string);
-
+void sendBLE(String);
 uint16_t adcRead();
 
 //Global variables
@@ -38,31 +37,32 @@ uint16_t adcRead();
 volatile unsigned long tmrOverflowsNow;
 volatile unsigned long cadTime;
 volatile unsigned int cadRPM;
-unsigned long tmrOverflowsThen0;
-unsigned long tmrOverflowsThen1;
-volatile unsigned long int runningTotal;
+volatile  uint16_t runningTotal; //Change type back to unsigned long int after test
 volatile int reads;
 volatile uint16_t adcAvg;
-string Datastring;
+volatile int c;
+
+unsigned long tmrOverflowsThen0;
+unsigned long tmrOverflowsThen1;
 
 uint16_t adcWord;
 uint8_t adcByteLow;
 uint8_t adcByteHigh;
-volatile int c;
-char cool[] = "goof";
 
+char cool[] = "goof";
+char Datastring[10];
 //Macros
 #define goBit(reg, target) (reg) |= (1<<(target))
 #define noBit(reg, target) (reg) &= ~(1<<(target))
 
-#define ADAFRUITBLE_REQ 4
+#define ADAFRUITBLE_REQ 0
 #define ADAFRUITBLE_RDY 2
-#define ADAFRUITBLE_RST 7
+#define ADAFRUITBLE_RST 1
 
 
 
 //Initialize uart object
-Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
+//Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
 
 void aciCallback(aci_evt_opcode_t event)
 {
@@ -101,7 +101,7 @@ void rxCallback(uint8_t *buffer, uint8_t len)
     Serial.println(F(" ]"));
     
     
-    uart.write(buffer, len);
+    //uart.write(buffer, len);
     
 }
 
@@ -119,15 +119,15 @@ Serial.println(F("Starting system setup..."));
     SPI.begin();
     
     configPins();
-    configClkMega();
+    configMegaClk();
     configAdc();
-    configIntCadence();
+    configInts();
     configTimer();
     
-    uart.setRXcallback(rxCallback);
-    uart.setACIcallback(aciCallback);
+    //uart.setRXcallback(rxCallback);
+    //uart.setACIcallback(aciCallback);
     
-    uart.begin();
+    //uart.begin();
     
 Serial.println(F("System setup complete"));
     
@@ -137,11 +137,12 @@ Serial.println(F("System setup complete"));
 
 void loop()
 {
-    uart.pollACI();
+    //uart.pollACI();
+
 }
 
 
-void adcConfig()
+void configAdc()
 {
 Serial.println("adc config started");
     
@@ -154,12 +155,12 @@ Serial.println("adc config started");
     
     //Perform initial startup routine
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
-    noBit(PORTD,PORTD5); //Select the AD7715
+    noBit(PORTB,PORTB2); //Select the AD7715
     
     SPI.transfer(0x10); //W to Comms reg: Prepare for write to setup register
     SPI.transfer(0x48); //W to Setup reg: 1MhZ clock, self calibration mode, 25KhZ output update rate
     
-    goBit(PORTD,PORTD5); //Deselect the AD7715
+    goBit(PORTB,PORTB2); //Deselect the AD7715
     SPI.endTransaction(); //Release SPI bus
     
 Serial.println("adc config completed");
@@ -184,14 +185,14 @@ void configTimer()
 }
 
 
-void configInt()
+void configInts()
 {
     
     Serial.println("interrupts config started");
     
     //INT1 used for DRDY
     goBit(PORTD, PORTD3); //Activates the pull up resistor on pin D3
-    noBit(EICRA,ISC11); // Low level of INT1 generates an IRQ
+    goBit(EICRA,ISC11); // Falling edge of INT1 generates an IRQ
     noBit(EICRA,ISC10);
     goBit(EIMSK, INT1); // Activates INT1
     
@@ -216,7 +217,7 @@ void configPins()
     
     //AD7715
     goBit(DDRD, DDD6); //Reset
-    goBit(DDRD,  DDD5); //CS
+    goBit(DDRB,  DDB2); //CS
     noBit(DDRD, DDD3); //DRDY //IS THIS NECESSARY FOR INT1?
     
     //SPI
@@ -230,15 +231,13 @@ void configPins()
     //Clock gen
     goBit(DDRB, DDB1); //1MhZ clock
     
-    //Misc
-    goBit(DDRB, DDB2); //Master mode
     
 //Initial values
     //NRF8001
     goBit(PORTD, PORTD0); //CS
     
     //AD7715
-    goBit(PORTD, PORTD5); //CS
+    goBit(PORTB, PORTB2); //CS
     
     //SPI
     noBit(PORTB,  PORTB5);  //SCK
@@ -254,16 +253,20 @@ void configPins()
 ISR(INT1_vect) // ISR for new data available
 {
     
-    runningTotal += adcRead(); //Update the new total thusfar
-    reads++;
-    
-    ////////////change this interrupt to trigger on low level!!!!!
+    runningTotal = adcRead(); //Update the new total thusfar  //ADD += AGAIN AFTER TEST
+//    //reads++;
+//    
+    itoa(runningTotal,Datastring,10);
+//
+    sendBLE(Datastring);
+
 }
 
-void sendBLE(string data)
+void sendBLE(String data)
 {
     cli();
-     uart.write((uint8_t *)data,10);
+     //uart.write((uint8_t *)data,10);
+    Serial.println(data);
     sei();
 }
 
@@ -278,8 +281,8 @@ ISR(TIMER2_OVF_vect) // ISR for timer 2 overflow
 
 //ISR(PCINT0_vect) //ISR for cadence reed switch
 //{
-//// Check that the pin change is due to DRDY being pulled low
-//if( !((PINB &(1<<PINB0)) ==1) ) //check if PINB0 is infact low
+//// Check that the pin change is due to cadence reed being pulled low
+//if( ((PINB &(1<<PINB0)) ==0) ) //check if PINB0 is infact low
 //{
 
 
@@ -317,7 +320,7 @@ ISR(TIMER2_OVF_vect) // ISR for timer 2 overflow
 
 
 //Timer 1 setup as 1Mhz clock on pin 15 to drive the AD7715
-void tmr1Config()
+void configMegaClk()
 {
     
     TCNT1 =0;
@@ -339,8 +342,12 @@ void tmr1Config()
 
 uint16_t adcRead(){
     
+    cli(); //Disable all interrupts while read is taking place
+    
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
-    noBit(PORTD,PORTD5); //Select the AD7715
+    noBit(PORTB,PORTB2); //Select the AD7715
+    
+    while(digitalRead(3)); //Ensuring that a read is not performed on a high level
     
     SPI.transfer(0x38); //W to Comms reg: Prepare for read from the data register next
     
@@ -349,12 +356,12 @@ uint16_t adcRead(){
     
     adcWord = ((adcByteHigh<<8) | adcByteLow);
     
-    Serial.println(adcWord);
-    
     SPI.endTransaction(); //Release SPI bus
-    goBit(PORTD,PORTD5); //Deselect the AD7715
+    goBit(PORTB,PORTB2); //Deselect the AD7715
     
     return adcWord;
+    
+    sei(); //Re-anable interrupts
 
 }
 
