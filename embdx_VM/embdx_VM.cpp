@@ -11,6 +11,10 @@
 #include <avr/interrupt.h>
 #include <Math.h>
 
+//Framework
+void setup();
+void loop();
+
 //Global methods
 
     //System configuration
@@ -24,12 +28,8 @@ void configTimer();
 void aciCallback(aci_evt_opcode_t event);
 void rxCallback(uint8_t *buffer, uint8_t len);
 
-    //Framework
-void setup();
-void loop();
-
     //I/O
-void sendBLE(String);
+void sendBLE(char[10]);
 uint16_t adcRead();
 
 //Global variables
@@ -37,7 +37,7 @@ uint16_t adcRead();
 volatile unsigned long tmrOverflowsNow;
 volatile unsigned long cadTime;
 volatile unsigned int cadRPM;
-volatile  uint16_t runningTotal; //Change type back to unsigned long int after test
+volatile  unsigned long int runningTotal; //Change type back to unsigned long int after test
 volatile int reads;
 volatile uint16_t adcAvg;
 volatile int c;
@@ -59,14 +59,11 @@ char Datastring[10];
 #define ADAFRUITBLE_RDY 2
 #define ADAFRUITBLE_RST 1
 
-
-
 //Initialize uart object
-//Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
+Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
 
 void aciCallback(aci_evt_opcode_t event)
 {
-    
     
     switch(event)
     {
@@ -101,7 +98,7 @@ void rxCallback(uint8_t *buffer, uint8_t len)
     Serial.println(F(" ]"));
     
     
-    //uart.write(buffer, len);
+    uart.write(buffer, len);
     
 }
 
@@ -116,18 +113,17 @@ Serial.println(F("Starting system setup..."));
     while(!Serial);
     Serial.println(F("Velometrics embdx running..."));
     
-    SPI.begin();
+    uart.setRXcallback(rxCallback);
+    uart.setACIcallback(aciCallback);
     
-    configPins();
-    configMegaClk();
-    configAdc();
-    configInts();
-    configTimer();
+    //configPins();
     
-    //uart.setRXcallback(rxCallback);
-    //uart.setACIcallback(aciCallback);
+    //configMegaClk();
+    //configAdc();
+    //configInts();
+    //configTimer();
     
-    //uart.begin();
+    uart.begin();
     
 Serial.println(F("System setup complete"));
     
@@ -137,14 +133,19 @@ Serial.println(F("System setup complete"));
 
 void loop()
 {
-    //uart.pollACI();
+    //Serial.println(F("Dwelling in main loop"));
+    //_delay_ms(500);
 
+    uart.pollACI();
 }
 
 
 void configAdc()
 {
 Serial.println("adc config started");
+    cli();
+    
+    SPI.begin();
     
     //Resetting the adc
     goBit(PORTD, PORTD6);
@@ -162,6 +163,7 @@ Serial.println("adc config started");
     
     goBit(PORTB,PORTB2); //Deselect the AD7715
     SPI.endTransaction(); //Release SPI bus
+    sei();
     
 Serial.println("adc config completed");
     
@@ -194,7 +196,7 @@ void configInts()
     goBit(PORTD, PORTD3); //Activates the pull up resistor on pin D3
     goBit(EICRA,ISC11); // Falling edge of INT1 generates an IRQ
     noBit(EICRA,ISC10);
-    goBit(EIMSK, INT1); // Activates INT1
+    //goBit(EIMSK, INT1); // Activates INT1
     
     //PCINT0 used for cadence reed switch
     //goBit(PORTB, PORTB0);	//Activates the pull up resistor on pin B0
@@ -208,25 +210,26 @@ void configInts()
 
 void configPins()
 {
+    Serial.println("configPins started");
     
 //Datadirection
     //NRF8001
-    goBit(DDRD, DDD1); //Reset
-    goBit(DDRD,  DDD0); //CS
-    noBit(DDRD, DDD2); //RDY
+    //goBit(DDRD, DDD1); //Reset
+    //goBit(DDRD,  DDD0); //CS
+    //noBit(DDRD, DDD2); //RDY
     
     //AD7715
     goBit(DDRD, DDD6); //Reset
     goBit(DDRB,  DDB2); //CS
-    noBit(DDRD, DDD3); //DRDY //IS THIS NECESSARY FOR INT1?
+    //noBit(DDRD, DDD3); //DRDY //IS THIS NECESSARY FOR INT1?
     
     //SPI
-    goBit(DDRB, DDB3); //MOSI
-    noBit(DDRB, DDB4); //MISO
-    goBit(DDRB, DDB5); //SCLK
+    //goBit(DDRB, DDB3); //MOSI
+    //noBit(DDRB, DDB4); //MISO
+    //goBit(DDRB, DDB5); //SCLK
     
     //Interrupts
-    noBit(DDRB, DDB0); //Cadence
+    //noBit(DDRB, DDB0); //Cadence
     
     //Clock gen
     goBit(DDRB, DDB1); //1MhZ clock
@@ -234,14 +237,16 @@ void configPins()
     
 //Initial values
     //NRF8001
-    goBit(PORTD, PORTD0); //CS
+    //goBit(PORTD, PORTD0); //CS
     
     //AD7715
     goBit(PORTB, PORTB2); //CS
     
     //SPI
-    noBit(PORTB,  PORTB5);  //SCK
-    noBit(PORTB, PORTB3);   //MOSI
+   // noBit(PORTB,  PORTB5);  //SCK
+   // noBit(PORTB, PORTB3);   //MOSI
+    
+    Serial.println("configPins completed");
 
 }
 
@@ -262,12 +267,13 @@ ISR(INT1_vect) // ISR for new data available
 
 }
 
-void sendBLE(String data)
+void sendBLE(char* data)
 {
-    cli();
-     //uart.write((uint8_t *)data,10);
+   
     Serial.println(data);
-    sei();
+    uart.write((uint8_t *)data,10);
+    uart.pollACI();
+    
 }
 
 
@@ -322,6 +328,7 @@ ISR(TIMER2_OVF_vect) // ISR for timer 2 overflow
 //Timer 1 setup as 1Mhz clock on pin 15 to drive the AD7715
 void configMegaClk()
 {
+    Serial.println("configMegaClk Started");
     
     TCNT1 =0;
     TCCR1A = 0x00;
@@ -337,17 +344,21 @@ void configMegaClk()
     
     goBit(DDRB, DDB1); //Set port B1 as output. This pin will generate the clock
     
+    Serial.println("configMegaClk Completed");
+    
     
 }
 
 uint16_t adcRead(){
     
-    cli(); //Disable all interrupts while read is taking place
+    //cli(); //Disable all interrupts while read is taking place
     
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
     noBit(PORTB,PORTB2); //Select the AD7715
     
-    while(digitalRead(3)); //Ensuring that a read is not performed on a high level
+    //while(digitalRead(3)); //Ensuring that a read is not performed on a high level
+    
+    Serial.println("Performing read...");
     
     SPI.transfer(0x38); //W to Comms reg: Prepare for read from the data register next
     
@@ -359,9 +370,11 @@ uint16_t adcRead(){
     SPI.endTransaction(); //Release SPI bus
     goBit(PORTB,PORTB2); //Deselect the AD7715
     
+    //sei(); //Re-anable interrupts
+    
     return adcWord;
     
-    sei(); //Re-anable interrupts
+    
 
 }
 
