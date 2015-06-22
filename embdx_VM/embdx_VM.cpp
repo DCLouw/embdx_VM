@@ -55,9 +55,16 @@ char Datastring[10];
 #define goBit(reg, target) (reg) |= (1<<(target))
 #define noBit(reg, target) (reg) &= ~(1<<(target))
 
-#define ADAFRUITBLE_REQ 0
+#define ADAFRUITBLE_REQ 4
 #define ADAFRUITBLE_RDY 2
-#define ADAFRUITBLE_RST 1
+#define ADAFRUITBLE_RST 7
+
+#define ADC_SS 10
+#define ADC_RES 6
+#define ADC_DRDY 3
+
+
+
 
 //Initialize uart object
 Adafruit_BLE_UART uart = Adafruit_BLE_UART(ADAFRUITBLE_REQ, ADAFRUITBLE_RDY, ADAFRUITBLE_RST);
@@ -116,12 +123,12 @@ Serial.println(F("Starting system setup..."));
     uart.setRXcallback(rxCallback);
     uart.setACIcallback(aciCallback);
     
-    //configPins();
+    configPins();
     
-    //configMegaClk();
-    //configAdc();
-    //configInts();
-    //configTimer();
+    configMegaClk();
+    configAdc();
+    configInts();
+    configTimer();
     
     uart.begin();
     
@@ -136,7 +143,16 @@ void loop()
     //Serial.println(F("Dwelling in main loop"));
     //_delay_ms(500);
 
-    uart.pollACI();
+    //uart.pollACI();
+    
+    runningTotal = adcRead(); //Update the new total thusfar  //ADD += AGAIN AFTER TEST
+    //    //reads++;
+    //
+    utoa(runningTotal,Datastring,10);
+    //
+    sendBLE(Datastring);
+    
+    _delay_ms(100);
 }
 
 
@@ -148,20 +164,20 @@ Serial.println("adc config started");
     SPI.begin();
     
     //Resetting the adc
-    goBit(PORTD, PORTD6);
+    digitalWrite(ADC_RES,1);
     _delay_ms(100);
-    noBit(PORTD, PORTD6);
+    digitalWrite(ADC_RES,0);
     _delay_ms(100);
-    goBit(PORTD, PORTD6);
+    digitalWrite(ADC_RES,1);
     
     //Perform initial startup routine
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
-    noBit(PORTB,PORTB2); //Select the AD7715
+    digitalWrite(ADC_SS,0);//Select the AD7715
     
     SPI.transfer(0x10); //W to Comms reg: Prepare for write to setup register
     SPI.transfer(0x48); //W to Setup reg: 1MhZ clock, self calibration mode, 25KhZ output update rate
     
-    goBit(PORTB,PORTB2); //Deselect the AD7715
+    digitalWrite(ADC_SS,1); //Deselect the AD7715
     SPI.endTransaction(); //Release SPI bus
     sei();
     
@@ -213,20 +229,10 @@ void configPins()
     Serial.println("configPins started");
     
 //Datadirection
-    //NRF8001
-    //goBit(DDRD, DDD1); //Reset
-    //goBit(DDRD,  DDD0); //CS
-    //noBit(DDRD, DDD2); //RDY
     
     //AD7715
-    goBit(DDRD, DDD6); //Reset
-    goBit(DDRB,  DDB2); //CS
-    //noBit(DDRD, DDD3); //DRDY //IS THIS NECESSARY FOR INT1?
-    
-    //SPI
-    //goBit(DDRB, DDB3); //MOSI
-    //noBit(DDRB, DDB4); //MISO
-    //goBit(DDRB, DDB5); //SCLK
+    pinMode(ADC_RES, OUTPUT); //Reset
+    pinMode(ADC_SS,OUTPUT); //CS
     
     //Interrupts
     //noBit(DDRB, DDB0); //Cadence
@@ -236,15 +242,9 @@ void configPins()
     
     
 //Initial values
-    //NRF8001
-    //goBit(PORTD, PORTD0); //CS
     
     //AD7715
-    goBit(PORTB, PORTB2); //CS
-    
-    //SPI
-   // noBit(PORTB,  PORTB5);  //SCK
-   // noBit(PORTB, PORTB3);   //MOSI
+    digitalWrite(ADC_SS, 1); //CS
     
     Serial.println("configPins completed");
 
@@ -261,7 +261,7 @@ ISR(INT1_vect) // ISR for new data available
     runningTotal = adcRead(); //Update the new total thusfar  //ADD += AGAIN AFTER TEST
 //    //reads++;
 //    
-    itoa(runningTotal,Datastring,10);
+    utoa(runningTotal,Datastring,10);
 //
     sendBLE(Datastring);
 
@@ -354,7 +354,7 @@ uint16_t adcRead(){
     //cli(); //Disable all interrupts while read is taking place
     
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
-    noBit(PORTB,PORTB2); //Select the AD7715
+    digitalWrite(ADC_SS,0); //Select the AD7715
     
     //while(digitalRead(3)); //Ensuring that a read is not performed on a high level
     
@@ -368,7 +368,7 @@ uint16_t adcRead(){
     adcWord = ((adcByteHigh<<8) | adcByteLow);
     
     SPI.endTransaction(); //Release SPI bus
-    goBit(PORTB,PORTB2); //Deselect the AD7715
+    digitalWrite(ADC_SS,1); //Deselect the AD7715
     
     //sei(); //Re-anable interrupts
     
