@@ -152,7 +152,7 @@ void loop()
     //
     sendBLE(Datastring);
     
-    _delay_ms(100);
+    _delay_ms(300);
 }
 
 
@@ -271,7 +271,9 @@ void sendBLE(char* data)
 {
    
     Serial.println(data);
-    uart.write((uint8_t *)data,10);
+    uart.write((uint8_t *)cool,10);
+    uart.pollACI();
+    uart.write2((uint8_t *)data,10);
     uart.pollACI();
     
 }
