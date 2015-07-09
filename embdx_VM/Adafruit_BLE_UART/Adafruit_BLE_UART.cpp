@@ -249,13 +249,13 @@ size_t Adafruit_BLE_UART::write(uint8_t * buffer, uint8_t len)
     if(bytesThisPass > ACI_PIPE_TX_DATA_MAX_LEN)
        bytesThisPass = ACI_PIPE_TX_DATA_MAX_LEN;
 
-    if(!lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX_TX))
+    if(!lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX2_TX))
     {
       pollACI();
       continue;
     }
 
-    lib_aci_send_data(PIPE_UART_OVER_BTLE_UART_TX_TX, &buffer[sent],
+    lib_aci_send_data(PIPE_UART_OVER_BTLE_UART_TX2_TX, &buffer[sent],
       bytesThisPass);
     aci_state.data_credit_available--;
 
@@ -273,9 +273,9 @@ size_t Adafruit_BLE_UART::write(uint8_t buffer)
 #ifdef BLE_RW_DEBUG
   Serial.print(F("\tWriting one byte 0x")); Serial.println(buffer, HEX);
 #endif
-  if (lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX_TX))
+  if (lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX2_TX))
   {
-    lib_aci_send_data(PIPE_UART_OVER_BTLE_UART_TX_TX, &buffer, 1);
+    lib_aci_send_data(PIPE_UART_OVER_BTLE_UART_TX2_TX, &buffer, 1);
     aci_state.data_credit_available--;
 
     delay(35); // required delay between sends
@@ -385,7 +385,7 @@ void Adafruit_BLE_UART::pollACI()
 	  aci_event(ACI_EVT_CONNECTED);
         
       case ACI_EVT_PIPE_STATUS:
-        if (lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX_TX) && (false == timing_change_done))
+        if (lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX2_TX) && (false == timing_change_done))
         {
           lib_aci_change_timing_GAP_PPCP(); // change the timing on the link as specified in the nRFgo studio -> nRF8001 conf. -> GAP. 
                                             // Used to increase or decrease bandwidth
