@@ -273,41 +273,41 @@ size_t Adafruit_BLE_UART::write(uint8_t * buffer, uint8_t len)
 /////////////////////////////////////////
 /////////////////////
 
-size_t Adafruit_BLE_UART::write2(uint8_t * buffer, uint8_t len)
-{
-  uint8_t bytesThisPass, sent = 0;
-
-#ifdef BLE_RW_DEBUG
-  Serial.print(F("\tWriting out to BTLE:"));
-  for (uint8_t i=0; i<len; i++) {
-    Serial.print(F(" 0x")); Serial.print(buffer[i], HEX);
-  }
-  Serial.println();
-#endif
-
-  while(len) { // Parcelize into chunks
-    bytesThisPass = len;
-    if(bytesThisPass > ACI_PIPE_TX_DATA_MAX_LEN)
-       bytesThisPass = ACI_PIPE_TX_DATA_MAX_LEN;
-
-    if(!lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX2_TX))
-    {
-      pollACI();
-      continue;
-    }
-
-    lib_aci_send_data(PIPE_UART_OVER_BTLE_UART_TX2_TX, &buffer[sent],
-      bytesThisPass);
-    aci_state.data_credit_available--;
-
-    delay(35); // required delay between sends
-
-    if(!(len -= bytesThisPass)) break;
-    sent += bytesThisPass;
-  }
-
-  return sent;
-}
+//size_t Adafruit_BLE_UART::write2(uint8_t * buffer, uint8_t len)
+//{
+//  uint8_t bytesThisPass, sent = 0;
+//
+//#ifdef BLE_RW_DEBUG
+//  Serial.print(F("\tWriting out to BTLE:"));
+//  for (uint8_t i=0; i<len; i++) {
+//    Serial.print(F(" 0x")); Serial.print(buffer[i], HEX);
+//  }
+//  Serial.println();
+//#endif
+//
+//  while(len) { // Parcelize into chunks
+//    bytesThisPass = len;
+//    if(bytesThisPass > ACI_PIPE_TX_DATA_MAX_LEN)
+//       bytesThisPass = ACI_PIPE_TX_DATA_MAX_LEN;
+//
+//    if(!lib_aci_is_pipe_available(&aci_state, PIPE_UART_OVER_BTLE_UART_TX2_TX))
+//    {
+//      pollACI();
+//      continue;
+//    }
+//
+//    lib_aci_send_data(PIPE_UART_OVER_BTLE_UART_TX2_TX, &buffer[sent],
+//      bytesThisPass);
+//    aci_state.data_credit_available--;
+//
+//    delay(35); // required delay between sends
+//
+//    if(!(len -= bytesThisPass)) break;
+//    sent += bytesThisPass;
+//  }
+//
+//  return sent;
+//}
 ///////
 //////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////

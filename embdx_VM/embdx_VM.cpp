@@ -10,6 +10,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <Math.h>
+#include <string.h>
 
 //Framework
 void setup();
@@ -42,15 +43,17 @@ volatile int reads;
 volatile uint16_t adcAvg;
 volatile int c;
 
-unsigned long tmrOverflowsThen0;
+unsigned long tmrOverflowsThen;
 unsigned long tmrOverflowsThen1;
 
 uint16_t adcWord;
 uint8_t adcByteLow;
 uint8_t adcByteHigh;
 
-char cool[] = "goof";
+String cool = "p";
 char Datastring[10];
+char Cadence[5] = "110";
+String temp;
 //Macros
 #define goBit(reg, target) (reg) |= (1<<(target))
 #define noBit(reg, target) (reg) &= ~(1<<(target))
@@ -120,17 +123,18 @@ Serial.println(F("Starting system setup..."));
     while(!Serial);
     Serial.println(F("Velometrics embdx running..."));
     
-    uart.setRXcallback(rxCallback);
-    uart.setACIcallback(aciCallback);
+    //uart.setRXcallback(rxCallback);
+    //uart.setACIcallback(aciCallback);
     
     configPins();
     
     configMegaClk();
     configAdc();
-    configInts();
     configTimer();
+    configInts();
+   
     
-    uart.begin();
+    //uart.begin();
     
 Serial.println(F("System setup complete"));
     
@@ -175,7 +179,7 @@ Serial.println("adc config started");
     digitalWrite(ADC_SS,0);//Select the AD7715
     
     SPI.transfer(0x10); //W to Comms reg: Prepare for write to setup register
-    SPI.transfer(0x48); //W to Setup reg: 1MhZ clock, self calibration mode, 25KhZ output update rate
+    SPI.transfer(0x4C); //W to Setup reg: 1MhZ clock, self calibration mode, 25KhZ output update rate
     
     digitalWrite(ADC_SS,1); //Deselect the AD7715
     SPI.endTransaction(); //Release SPI bus
@@ -207,17 +211,18 @@ void configInts()
 {
     
     Serial.println("interrupts config started");
+    //pinMode(3, INPUT);
     
     //INT1 used for DRDY
-    goBit(PORTD, PORTD3); //Activates the pull up resistor on pin D3
-    goBit(EICRA,ISC11); // Falling edge of INT1 generates an IRQ
-    noBit(EICRA,ISC10);
+    //goBit(PORTD, PORTD3); //Activates the pull up resistor on pin D3
+    //goBit(EICRA,ISC11); // Falling edge of INT1 generates an IRQ
+    //noBit(EICRA,ISC10);
     //goBit(EIMSK, INT1); // Activates INT1
     
     //PCINT0 used for cadence reed switch
-    //goBit(PORTB, PORTB0);	//Activates the pull up resistor on pin B0
-    //goBit(PCICR, PCIE0);	// Enables PCMSK0 scan
-    //goBit(PCMSK0, PCINT0);	//Sets the mask bit for PCINT0
+    goBit(PORTB, PORTB0);	//Activates the pull up resistor on pin B0
+    goBit(PCICR, PCIE0);	// Enables PCMSK0 scan
+    goBit(PCMSK0, PCINT0);	//Sets the mask bit for PCINT0
     
     Serial.println("interrupts config completed");
     
@@ -270,11 +275,18 @@ ISR(INT1_vect) // ISR for new data available
 void sendBLE(char* data)
 {
    
-    Serial.println(data);
-    uart.write((uint8_t *)cool,10);
+    temp = data + String(" ") + Cadence+ String(" ");
+    
+    Serial.println(temp);
+    
+    Serial.println("has been sent");
+    //uart.write((uint8_t *)(temp.c_str()),10);
+    
+//    uart.write((uint8_t *)(data),10);
     uart.pollACI();
-    uart.write2((uint8_t *)data,10);
-    uart.pollACI();
+    _delay_ms(100);
+    //uart.write2((uint8_t *)data,10);
+    //uart.pollACI();
     
 }
 
@@ -287,21 +299,28 @@ ISR(TIMER2_OVF_vect) // ISR for timer 2 overflow
     
 }
 
-//ISR(PCINT0_vect) //ISR for cadence reed switch
-//{
+ISR(PCINT0_vect) //ISR for cadence reed switch
+{
 //// Check that the pin change is due to cadence reed being pulled low
-//if( ((PINB &(1<<PINB0)) ==0) ) //check if PINB0 is infact low
-//{
+if( ((PINB &(1<<PINB0)) ==0) ) //check if PINB0 is infact low
+{
 
 
-//if (tmrOverflowsNow > (tmrOverflowsThen1+300)) //Prevents bounce on the cadence reed switch
-//{
+if (tmrOverflowsNow > (tmrOverflowsThen+100)) //Prevents bounce on the cadence reed switch
+{
     
-    //Serial.println("interrupt passed");
+    Serial.println("interrupt passed");
     
     
-    //cadTime = ((tmrOverflowsNow-tmrOverflowsThen1)*1024)+(TCNT1*4); //time in uS
-    //cadRPM = round((60000000)/cadTime);
+    cadTime = ((tmrOverflowsNow-tmrOverflowsThen)*1024)+(TCNT2*4); //time in uS
+    cadRPM = round((60000000)/cadTime);
+    
+    itoa(cadRPM,Cadence,10);
+    
+    Serial.println(Cadence);
+    
+    tmrOverflowsNow = 0;
+    tmrOverflowsThen =0;
 
     //adcAvg = round(runningTotal / reads);
 
@@ -313,17 +332,17 @@ ISR(TIMER2_OVF_vect) // ISR for timer 2 overflow
 //runningTotal=0;
 
 
-//}
+}
 
-//else {
+else {
     
-//    Serial.println("Bounce detected");
-//}//else
+    Serial.println("Bounce detected");
+}//else
 
 
-//}//If indeed
+}//If indeed
 
-//}//ISR if
+}//ISR if
 
 
 
