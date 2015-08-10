@@ -149,14 +149,10 @@ void loop()
 
     //uart.pollACI();
     
-    runningTotal = adcRead(); //Update the new total thusfar  //ADD += AGAIN AFTER TEST
-    //    //reads++;
-    //
-    utoa(runningTotal,Datastring,10);
-    //
-    sendBLE(Datastring);
+    runningTotal += adcRead();
+    reads++;
     
-    _delay_ms(300);
+    _delay_ms(200);
 }
 
 
@@ -178,7 +174,7 @@ Serial.println("adc config started");
     SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE3));
     digitalWrite(ADC_SS,0);//Select the AD7715
     
-    SPI.transfer(0x10); //W to Comms reg: Prepare for write to setup register
+    SPI.transfer(0x13); //W to Comms reg: Prepare for write to setup register. Set gain as 128.
     SPI.transfer(0x4C); //W to Setup reg: 1MhZ clock, self calibration mode, 25KhZ output update rate
     
     digitalWrite(ADC_SS,1); //Deselect the AD7715
@@ -260,17 +256,17 @@ void configPins()
 //INTERRUPT VECTORS
 
 
-ISR(INT1_vect) // ISR for new data available
-{
-    
-    runningTotal = adcRead(); //Update the new total thusfar  //ADD += AGAIN AFTER TEST
-//    //reads++;
+//ISR(INT1_vect) // ISR for new data available
+//{
 //    
-    utoa(runningTotal,Datastring,10);
+//    runningTotal = adcRead(); //Update the new total thusfar  //ADD += AGAIN AFTER TEST
+////    //reads++;
+////    
+//    utoa(runningTotal,Datastring,10);
+////
+//    sendBLE(Datastring);
 //
-    sendBLE(Datastring);
-
-}
+//}
 
 void sendBLE(char* data)
 {
@@ -306,21 +302,28 @@ if( ((PINB &(1<<PINB0)) ==0) ) //check if PINB0 is infact low
 {
 
 
-if (tmrOverflowsNow > (tmrOverflowsThen+100)) //Prevents bounce on the cadence reed switch
+if (tmrOverflowsNow > 100) //Prevents bounce on the cadence reed switch
 {
     
     Serial.println("interrupt passed");
     
     
-    cadTime = ((tmrOverflowsNow-tmrOverflowsThen)*1024)+(TCNT2*4); //time in uS
+    cadTime = ((tmrOverflowsNow)*1024)+(TCNT2*4); //time in uS
     cadRPM = round((60000000)/cadTime);
     
     itoa(cadRPM,Cadence,10);
     
+    adcAvg = floor(runningTotal/reads);
+    
     Serial.println(Cadence);
     
-    tmrOverflowsNow = 0;
-    tmrOverflowsThen =0;
+    utoa(adcAvg,Datastring,10);
+    
+    sendBLE(Datastring);
+    
+     tmrOverflowsNow = 0;
+     runningTotal =0;
+     reads=0;
 
     //adcAvg = round(runningTotal / reads);
 
@@ -381,7 +384,7 @@ uint16_t adcRead(){
     
     Serial.println("Performing read...");
     
-    SPI.transfer(0x38); //W to Comms reg: Prepare for read from the data register next
+    SPI.transfer(0x3B); //W to Comms reg: Prepare for read from the data register next. Set gain as 128
     
     adcByteHigh = SPI.transfer(0); //R from Data reg: First data byte
     adcByteLow = SPI.transfer(0); //R from Data reg: Second data byte
